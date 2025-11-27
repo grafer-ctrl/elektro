@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Resistor Calculator</title>
+    <style>
+        :root {
+            --primary: #007bff;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --text: #212529;
+            --header-h: 60px;
+            --overlay-bg: rgba(0,0,0,0.5);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding-top: var(--header-h);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- Header & Nav --- */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--header-h);
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .app-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Hamburger Menu */
+        .hamburger {
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #333;
+            user-select: none;
+        }
+
+        /* --- Menu Overlay --- */
+        .menu-overlay {
+            position: fixed;
+            top: var(--header-h);
+            right: -100%; /* Hidden by default */
+            width: 250px;
+            height: calc(100vh - var(--header-h));
+            background: #fff;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.3s ease;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .menu-overlay.open {
+            right: 0;
+        }
+
+        .menu-item {
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .lang-switch {
+            display: flex;
+            gap: 10px;
+        }
+
+        .lang-btn {
+            border: 1px solid #ddd;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .lang-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* --- Main Content --- */
+        .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+            padding-bottom: 50px;
+        }
+
+        /* Resistor Graphic */
+        .resistor-graphic {
+            background: #e9ecef;
+            height: 100px;
+            border-radius: 50px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .wire {
+            position: absolute;
+            width: 100%;
+            height: 8px;
+            background: #adb5bd;
+            z-index: 0;
+        }
+
+        .body-part {
+            position: relative;
+            width: 80%;
+            height: 100%;
+            background: #f3e2b3; /* Beige */
+            border-radius: 12px;
+            z-index: 1;
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            border: 3px solid #e0c888;
+            overflow: hidden;
+        }
+
+        .band { width: 15px; height: 100%; }
+
+        /* Result */
+        .result-box {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            text-align: center;
+            margin-bottom: 20px;
+            border: 1px solid #eee;
+        }
+
+        .ohm-value { font-size: 2.2rem; font-weight: 800; color: var(--primary); margin-bottom: 5px; }
+        .tolerance-value { color: #6c757d; font-size: 1rem; font-weight: 500; }
+
+        /* Controls */
+        .controls {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid #eee;
+        }
+
+        .control-group { margin-bottom: 15px; }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: #fff;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px top 50%;
+            background-size: 12px auto;
+        }
+
+        /* Option Colors Styling */
+        option[value="0"] { background-color: black; color: white; }
+        option[value="1"] { background-color: brown; color: white; }
+        option[value="2"] { background-color: red; color: white; }
+        option[value="3"] { background-color: orange; color: black; }
+        option[value="4"] { background-color: yellow; color: black; }
+        option[value="5"] { background-color: green; color: white; }
+        option[value="6"] { background-color: blue; color: white; }
+        option[value="7"] { background-color: violet; color: white; }
+        option[value="8"] { background-color: grey; color: white; }
+        option[value="9"] { background-color: white; color: black; }
+        option[value="-1"] { background-color: gold; color: black; }
+        option[value="-2"] { background-color: silver; color: black; }
+
+        .mode-switch {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            background: #e9ecef;
+            border-radius: 12px;
+            padding: 4px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 10px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: 0.3s;
+        }
+
+        .mode-btn.active {
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: var(--primary);
+        }
+
+        /* --- Modal (User Guide) --- */
+        .modal-backdrop {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(3px);
+        }
+
+        .modal-content {
+            background: #fff;
+            width: 100%;
+            max-width: 500px;
+            border-radius: 20px;
+            padding: 25px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px; right: 15px;
+            font-size: 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .modal-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; }
+        .modal-body p { margin-bottom: 10px; line-height: 1.5; color: #444; }
+        .modal-body ul { margin-left: 20px; margin-bottom: 10px; color: #444; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Navigasi -->
+    <nav>
+        <a href="index.html" class="back-btn">
+            <span style="font-size:1.2rem; margin-right:5px;">&#8592;</span> <span data-i18n="back_home">Home</span>
+        </a>
+        <div class="app-title">ElectroCalc</div>
+        <div class="hamburger" onclick="toggleMenu()">&#9776;</div>
+    </nav>
+
+    <!-- Menu Overlay -->
+    <div id="side-menu" class="menu-overlay">
+        <div class="menu-item">
+            <span data-i18n="language">Language</span>
+            <div class="lang-switch">
+                <button class="lang-btn active" id="btn-en" onclick="setLanguage('en')">EN</button>
+                <button class="lang-btn" id="btn-id" onclick="setLanguage('id')">ID</button>
+            </div>
+        </div>
+        <div class="menu-item" onclick="toggleModal(true)">
+            <span data-i18n="guide_menu">User Guide</span>
+            <span>&#9432;</span>
+        </div>
+        <div class="menu-item" onclick="window.location.href='index.html'">
+            <span data-i18n="exit_menu">Exit App</span>
+            <span>&#10005;</span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container" onclick="closeMenu()">
+        <!-- Switch 4/5 Band -->
+        <div class="mode-switch">
+            <button class="mode-btn active" onclick="setMode(4)" id="btn-mode-4">4 Bands</button>
+            <button class="mode-btn" onclick="setMode(5)" id="btn-mode-5">5 Bands</button>
+        </div>
+
+        <!-- Visualisasi Resistor -->
+        <div class="resistor-graphic">
+            <div class="wire"></div>
+            <div class="body-part">
+                <div class="band" id="band1-visual" style="background: brown;"></div>
+                <div class="band" id="band2-visual" style="background: black;"></div>
+                <div class="band" id="band3-visual" style="background: red; display: none;"></div>
+                <div class="band" id="band-mul-visual" style="background: red;"></div>
+                <div class="band" id="band-tol-visual" style="background: gold; margin-left: 15px;"></div>
+            </div>
+        </div>
+
+        <!-- Hasil -->
+        <div class="result-box">
+            <div class="ohm-value" id="result-text">1 kΩ</div>
+            <div class="tolerance-value" id="tolerance-text">±5%</div>
+        </div>
+
+        <!-- Input Kontrol -->
+        <div class="controls">
+            <div class="control-group">
+                <label data-i18n="band1">Band 1 (Digit)</label>
+                <select id="band1" class="color-select" onchange="calculate()"></select>
+            </div>
+
+            <div class="control-group">
+                <label data-i18n="band2">Band 2 (Digit)</label>
+                <select id="band2" class="color-select" onchange="calculate()"></select>
+            </div>
+
+            <div class="control-group" id="group-band3" style="display: none;">
+                <label data-i18n="band3">Band 3 (Digit)</label>
+                <select id="band3" class="color-select" onchange="calculate()"></select>
+            </div>
+
+            <div class="control-group">
+                <label data-i18n="multiplier">Multiplier</label>
+                <select id="multiplier" class="color-select" onchange="calculate()"></select>
+            </div>
+
+            <div class="control-group">
+                <label data-i18n="tolerance">Tolerance</label>
+                <select id="tolerance" class="color-select" onchange="calculate()"></select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal User Guide -->
+    <div class="modal-backdrop" id="guide-modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="toggleModal(false)">&times;</button>
+            <h3 class="modal-title" data-i18n="guide_title">How to Use</h3>
+            <div class="modal-body" id="guide-content">
+                <!-- Content injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA & CONFIG ---
+        let currentLang = 'en';
+        let bands = 4;
+        
+        // Dictionary Bahasa
+        const i18n = {
+            en: {
+                back_home: "Back Home",
+                language: "Language",
+                guide_menu: "User Guide",
+                exit_menu: "Exit App",
+                band1: "Band 1 (Digit)",
+                band2: "Band 2 (Digit)",
+                band3: "Band 3 (Digit)",
+                multiplier: "Multiplier",
+                tolerance: "Tolerance",
+                mode4: "4 Bands",
+                mode5: "5 Bands",
+                guide_title: "How to Use",
+                colors: ["Black","Brown","Red","Orange","Yellow","Green","Blue","Violet","Grey","White","Gold","Silver"],
+                guide_text: `
+                    <p><strong>1. Select Mode:</strong> Choose between 4-Band (Standard) or 5-Band (Precision) resistor mode at the top.</p>
+                    <p><strong>2. Select Colors:</strong> Tap the dropdown menus to match the colors on your physical resistor.</p>
+                    <p><strong>3. Read Result:</strong> The calculated resistance and tolerance will appear instantly in the result box.</p>
+                    <ul>
+                        <li><strong>Band 1 & 2 (3):</strong> Significant digits.</li>
+                        <li><strong>Multiplier:</strong> Multiplies the digits (number of zeros).</li>
+                        <li><strong>Tolerance:</strong> The accuracy of the resistor value.</li>
+                    </ul>
+                `
+            },
+            id: {
+                back_home: "Kembali",
+                language: "Bahasa",
+                guide_menu: "Panduan",
+                exit_menu: "Keluar",
+                band1: "Pita 1 (Digit)",
+                band2: "Pita 2 (Digit)",
+                band3: "Pita 3 (Digit)",
+                multiplier: "Pengali",
+                tolerance: "Toleransi",
+                mode4: "4 Pita",
+                mode5: "5 Pita",
+                guide_title: "Cara Penggunaan",
+                colors: ["Hitam","Coklat","Merah","Oranye","Kuning","Hijau","Biru","Ungu","Abu-abu","Putih","Emas","Perak"],
+                guide_text: `
+                    <p><strong>1. Pilih Mode:</strong> Pilih antara mode 4-Pita (Standar) atau 5-Pita (Presisi) di bagian atas.</p>
+                    <p><strong>2. Pilih Warna:</strong> Tekan menu dropdown untuk mencocokkan warna dengan resistor fisik Anda.</p>
+                    <p><strong>3. Baca Hasil:</strong> Nilai resistansi dan toleransi akan muncul secara instan di kotak hasil.</p>
+                    <ul>
+                        <li><strong>Pita 1 & 2 (3):</strong> Angka digit utama.</li>
+                        <li><strong>Pengali:</strong> Mengalikan digit (jumlah nol).</li>
+                        <li><strong>Toleransi:</strong> Akurasi nilai resistor.</li>
+                    </ul>
+                `
+            }
+        };
+
+        const colorMapCSS = {
+            "0": "black", "1": "brown", "2": "red", "3": "orange", "4": "yellow",
+            "5": "green", "6": "blue", "7": "violet", "8": "grey", "9": "white",
+            "-1": "gold", "-2": "silver"
+        };
+
+        // --- INIT FUNCTIONS ---
+
+        function initSelects() {
+            // Define options structure [value, colorIndexForName]
+            const digits = [[0,0],[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8],[9,9]];
+            const mults = [[0,0],[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],[8,8],[9,9],[-1,10],[-2,11]];
+            const tols = [[1,1],[2,2],[0.5,5],[0.25,6],[0.1,7],[0.05,8],[5,10],[10,11]];
+
+            renderOptions('band1', digits, 1); // Default Brown
+            renderOptions('band2', digits, 0); // Default Black
+            renderOptions('band3', digits, 2); // Default Red
+            renderOptions('multiplier', mults, 2); // Default Red (x100)
+            renderOptions('tolerance', tols, 5); // Default Gold (5%)
+        }
+
+        function renderOptions(id, data, defaultVal) {
+            const select = document.getElementById(id);
+            // Save current value if exists to prevent reset on lang switch
+            const currentVal = select.value; 
+            select.innerHTML = '';
+            
+            data.forEach(item => {
+                const val = item[0];
+                const colorIdx = item[1];
+                const colorName = i18n[currentLang].colors[colorIdx];
+                
+                let label = `${colorName}`;
+                // Append logic specific text
+                if(id === 'multiplier') {
+                    if(val >= 0) label += ` (10^${val})`;
+                    else label += ` (10^${val})`; 
+                } else if (id === 'tolerance') {
+                    label += ` (±${val}%)`;
+                } else {
+                    label += ` (${val})`;
+                }
+
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.text = label;
+                select.add(opt);
+            });
+
+            // Restore or set default
+            if(currentVal && select.querySelector(`option[value="${currentVal}"]`)) {
+                select.value = currentVal;
+            } else {
+                select.value = defaultVal;
+            }
+        }
+
+        // --- UI LOGIC ---
+
+        function toggleMenu() {
+            const menu = document.getElementById('side-menu');
+            if(menu.classList.contains('open')) {
+                closeMenu();
+            } else {
+                menu.classList.add('open');
+            }
+        }
+
+        function closeMenu() {
+            document.getElementById('side-menu').classList.remove('open');
+        }
+
+        function toggleModal(show) {
+            const modal = document.getElementById('guide-modal');
+            modal.style.display = show ? 'flex' : 'none';
+            if(show) closeMenu();
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            
+            // Update Buttons
+            document.getElementById('btn-en').classList.remove('active');
+            document.getElementById('btn-id').classList.remove('active');
+            document.getElementById(`btn-${lang}`).classList.add('active');
+
+            // Update Text Elements
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(i18n[lang][key]) el.innerText = i18n[lang][key];
+            });
+
+            // Update Guide Content
+            document.getElementById('guide-content').innerHTML = i18n[lang].guide_text;
+
+            // Update Mode Buttons Manually (as they have logic)
+            document.getElementById('btn-mode-4').innerText = i18n[lang].mode4;
+            document.getElementById('btn-mode-5').innerText = i18n[lang].mode5;
+
+            // Re-render Selects (to translate color names)
+            initSelects();
+            
+            // Close menu
+            // closeMenu(); // Optional: keep menu open to see change
+        }
+
+        function setMode(n) {
+            bands = n;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-mode-${n}`).classList.add('active');
+            
+            const band3Group = document.getElementById('group-band3');
+            const band3Visual = document.getElementById('band3-visual');
+            
+            if (n === 5) {
+                band3Group.style.display = 'block';
+                band3Visual.style.display = 'block';
+            } else {
+                band3Group.style.display = 'none';
+                band3Visual.style.display = 'none';
+            }
+            calculate();
+        }
+
+        // --- CALCULATION LOGIC ---
+
+        function calculate() {
+            const b1 = parseInt(document.getElementById('band1').value);
+            const b2 = parseInt(document.getElementById('band2').value);
+            const b3 = parseInt(document.getElementById('band3').value);
+            const mul = parseFloat(document.getElementById('multiplier').value);
+            const tol = parseFloat(document.getElementById('tolerance').value);
+
+            // Update Visuals
+            updateVisualColor('band1-visual', b1);
+            updateVisualColor('band2-visual', b2);
+            updateVisualColor('band3-visual', b3);
+            updateVisualColor('band-mul-visual', mul);
+            
+            // Tolerance color logic
+            let tolColor;
+            if(tol === 1) tolColor = 'brown';
+            else if(tol === 2) tolColor = 'red';
+            else if(tol === 0.5) tolColor = 'green';
+            else if(tol === 0.25) tolColor = 'blue';
+            else if(tol === 0.1) tolColor = 'violet';
+            else if(tol === 0.05) tolColor = 'grey';
+            else if(tol === 5) tolColor = 'gold';
+            else if(tol === 10) tolColor = 'silver';
+            document.getElementById('band-tol-visual').style.backgroundColor = tolColor;
+
+            // Calculate Math
+            let baseVal = (bands === 4) ? (b1 * 10) + b2 : (b1 * 100) + (b2 * 10) + b3;
+            let totalOhms = baseVal * Math.pow(10, mul);
+            
+            document.getElementById('result-text').innerText = formatOhms(totalOhms);
+            document.getElementById('tolerance-text').innerText = `±${tol}%`;
+        }
+
+        function updateVisualColor(elementId, val) {
+            const el = document.getElementById(elementId);
+            el.style.backgroundColor = colorMapCSS[val];
+        }
+
+        function formatOhms(ohms) {
+            if (ohms >= 1e9) return (ohms / 1e9).toFixed(2).replace(/\.00$/, '') + " GΩ";
+            if (ohms >= 1e6) return (ohms / 1e6).toFixed(2).replace(/\.00$/, '') + " MΩ";
+            if (ohms >= 1e3) return (ohms / 1e3).toFixed(2).replace(/\.00$/, '') + " kΩ";
+            return ohms.toFixed(2).replace(/\.00$/, '') + " Ω";
+        }
+
+        // --- STARTUP ---
+        initSelects();
+        setLanguage('en'); // Default English
+        calculate();
+
+    </script>
+</body>
+</html>
